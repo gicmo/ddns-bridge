@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/fcgi"
+	"net/url"
 	"strings"
 )
 
@@ -103,12 +104,14 @@ func handler(w http.ResponseWriter, req *http.Request) {
 		log.Print(err)
 	}
 
-	q := req.URL.Query()
+	q := url.Values{}
 	q.Add("fqdn", hostname)
-	q.Add("thisipv4","1")
+	q.Add("thisipv4","0") // we are proxying, it is not our IPv4
 	q.Add("ipv4", ip)
 	q.Add("token", token)
 	r.URL.RawQuery = q.Encode()
+
+	log.Printf("  sending: %s", r.URL.String())
 
 	client := &http.Client{}
 	rs, err := client.Do(r)
@@ -126,6 +129,7 @@ func handler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	bodyString := string(bodyBytes)
+	log.Printf("  got: %s", bodyString)
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, bodyString)
 }
